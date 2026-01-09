@@ -1,0 +1,6 @@
+torch
+torchvision
+opencv-python
+numpy
+dill
+wilor-mini@ git+https://github.com/warmshao/WiLoR-mini

@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: wilor-minimal
+Version: 0.1.0
+Summary: Minimal WiLoR demo
+Requires-Python: <3.11,>=3.10
+Requires-Dist: torch
+Requires-Dist: torchvision
+Requires-Dist: opencv-python
+Requires-Dist: numpy
+Requires-Dist: dill
+Requires-Dist: wilor-mini@ git+https://github.com/warmshao/WiLoR-mini

@@ -1,0 +1,7 @@
+demo.py
+pyproject.toml
+wilor_minimal.egg-info/PKG-INFO
+wilor_minimal.egg-info/SOURCES.txt
+wilor_minimal.egg-info/dependency_links.txt
+wilor_minimal.egg-info/requires.txt
+wilor_minimal.egg-info/top_level.txt
