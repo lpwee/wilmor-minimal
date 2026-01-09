@@ -17,7 +17,7 @@ def draw_hand_landmarks(image: np.ndarray, outputs: dict) -> np.ndarray:
     """Draw wrist, thumb tip, and index tip landmarks on the image."""
     img = image.copy()
 
-    if not outputs or len(outputs) == 0:
+    if not outputs or len(outputs) == 0: # no hand detected
         return img
 
     # Landmarks to draw: (index, name, color)
@@ -28,12 +28,18 @@ def draw_hand_landmarks(image: np.ndarray, outputs: dict) -> np.ndarray:
     ]
 
     for hand_idx, hand_data in enumerate(outputs):
-        if 'joints_2d' not in hand_data or 'joints_3d' not in hand_data:
+        # Extract joints from wilor_preds structure
+        wilor_preds = hand_data.get('wilor_preds', {})
+        if 'pred_keypoints_2d' not in wilor_preds or 'pred_keypoints_3d' not in wilor_preds:
             continue
 
-        joints_2d = hand_data['joints_2d']
-        joints_3d = hand_data['joints_3d']
-        hand_side = hand_data.get('hand_side', f'hand_{hand_idx}')
+        # Squeeze out batch dimension (shape: (1, 21, 2) -> (21, 2))
+        joints_2d = np.squeeze(wilor_preds['pred_keypoints_2d'], axis=0)
+        joints_3d = np.squeeze(wilor_preds['pred_keypoints_3d'], axis=0)
+
+        # Determine hand side from is_right flag
+        is_right = hand_data.get('is_right', 1.0)
+        hand_side = 'right' if is_right > 0.5 else 'left'
 
         # Print 3D coordinates
         print(f"\n{hand_side.upper()} hand:")
@@ -139,12 +145,11 @@ def run_image_demo(image_path: str):
                 else:
                     print(f"  {key}: {val}")
 
-    # Draw and show results
+    # Draw and save results
     result_image = draw_hand_landmarks(image, outputs)
-    cv2.imshow("WiLoR Result", result_image)
-    print("\nPress any key to close...")
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    output_path = image_path.rsplit('.', 1)[0] + '_output.jpg'
+    cv2.imwrite(output_path, result_image)
+    print(f"\nSaved result to: {output_path}")
 
 
 if __name__ == "__main__":
