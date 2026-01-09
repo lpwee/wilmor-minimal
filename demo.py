@@ -7,66 +7,52 @@ import torch
 from wilor_mini.pipelines.wilor_hand_pose3d_estimation_pipeline import WiLorHandPose3dEstimationPipeline
 
 
+# Landmark indices
+WRIST = 0
+THUMB_TIP = 4
+INDEX_TIP = 8
+
+
 def draw_hand_landmarks(image: np.ndarray, outputs: dict) -> np.ndarray:
-    """Draw 2D hand landmarks on the image."""
+    """Draw wrist, thumb tip, and index tip landmarks on the image."""
     img = image.copy()
 
     if not outputs or len(outputs) == 0:
         return img
 
-    # Hand connections for visualization (standard 21-point hand model)
-    connections = [
-        (0, 1), (1, 2), (2, 3), (3, 4),  # thumb
-        (0, 5), (5, 6), (6, 7), (7, 8),  # index
-        (0, 9), (9, 10), (10, 11), (11, 12),  # middle
-        (0, 13), (13, 14), (14, 15), (15, 16),  # ring
-        (0, 17), (17, 18), (18, 19), (19, 20),  # pinky
-        (5, 9), (9, 13), (13, 17),  # palm
-    ]
-
-    colors = [
-        (255, 0, 0),    # red - thumb
-        (0, 255, 0),    # green - index
-        (0, 0, 255),    # blue - middle
-        (255, 255, 0),  # yellow - ring
-        (255, 0, 255),  # magenta - pinky
+    # Landmarks to draw: (index, name, color)
+    landmarks = [
+        (WRIST, "Wrist", (0, 255, 0)),        # green
+        (THUMB_TIP, "Thumb", (255, 0, 0)),    # blue (BGR)
+        (INDEX_TIP, "Index", (0, 0, 255)),    # red (BGR)
     ]
 
     for hand_idx, hand_data in enumerate(outputs):
-        # Get 2D keypoints if available
-        if 'joints_2d' in hand_data:
-            joints_2d = hand_data['joints_2d']
-        elif 'bbox' in hand_data and 'joints_3d' in hand_data:
-            # Project 3D to 2D using bbox center as reference
-            continue
-        else:
+        if 'joints_2d' not in hand_data or 'joints_3d' not in hand_data:
             continue
 
-        # Draw connections
-        for i, (start, end) in enumerate(connections):
-            if start < len(joints_2d) and end < len(joints_2d):
-                pt1 = tuple(map(int, joints_2d[start][:2]))
-                pt2 = tuple(map(int, joints_2d[end][:2]))
-                color = colors[i // 4 % len(colors)]
-                cv2.line(img, pt1, pt2, color, 2)
+        joints_2d = hand_data['joints_2d']
+        joints_3d = hand_data['joints_3d']
+        hand_side = hand_data.get('hand_side', f'hand_{hand_idx}')
 
-        # Draw keypoints
-        for j, pt in enumerate(joints_2d):
-            pt_int = tuple(map(int, pt[:2]))
-            cv2.circle(img, pt_int, 4, (0, 255, 255), -1)
-            cv2.circle(img, pt_int, 4, (0, 0, 0), 1)
+        # Print 3D coordinates
+        print(f"\n{hand_side.upper()} hand:")
+        for idx, name, _ in landmarks:
+            x, y, z = joints_3d[idx]
+            print(f"  {name:6s}: x={x:7.3f}, y={y:7.3f}, z={z:7.3f}")
 
-        # Draw bounding box if available
-        if 'bbox' in hand_data:
-            bbox = hand_data['bbox']
-            x1, y1, x2, y2 = map(int, bbox[:4])
-            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        # Draw line between thumb and index tip
+        thumb_pt = tuple(map(int, joints_2d[THUMB_TIP][:2]))
+        index_pt = tuple(map(int, joints_2d[INDEX_TIP][:2]))
+        cv2.line(img, thumb_pt, index_pt, (255, 0, 255), 2)  # magenta line
 
-            # Add label
-            label = f"Hand {hand_idx + 1}"
-            if 'hand_side' in hand_data:
-                label = hand_data['hand_side'].capitalize()
-            cv2.putText(img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+        # Draw landmarks on image
+        for idx, name, color in landmarks:
+            pt = tuple(map(int, joints_2d[idx][:2]))
+            cv2.circle(img, pt, 8, color, -1)
+            cv2.circle(img, pt, 8, (0, 0, 0), 2)
+            cv2.putText(img, name, (pt[0] + 10, pt[1] - 5),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
     return img
 
@@ -81,7 +67,7 @@ def run_webcam_demo():
     pipe = WiLorHandPose3dEstimationPipeline(device=device, dtype=dtype)
     print("Pipeline ready!")
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     if not cap.isOpened():
         print("Error: Could not open webcam")
         return

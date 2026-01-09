@@ -1,6 +1,20 @@
-torch
-torchvision
+# WiLoR-minimal dependencies
+#
+# INSTALLATION (workaround for chumpy build issue):
+# The chumpy package has a broken setup.py that fails with modern pip.
+# You must use --no-build-isolation when installing wilor-mini:
+#
+#   python -m venv venv
+#   source venv/bin/activate  # On Windows: venv\Scripts\activate
+#   pip install --no-build-isolation git+https://github.com/warmshao/WiLoR-mini
+#   pip install -r requirements.txt
+#
+# The wilor-mini install will pull in most dependencies. The requirements
+# below are for any additional packages needed.
+
+torch<=2.5
+torchvision<=0.20
 opencv-python
 numpy
 dill
-wilor-mini @ git+https://github.com/warmshao/WiLoR-mini
+# wilor-mini installed separately due to chumpy build issue (see instructions above)
